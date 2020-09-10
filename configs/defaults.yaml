@@ -1,0 +1,12 @@
+defaults:
+  - training: on_gpu
+  - model: BiGRU
+  - data: qc
+
+seed: 42
+test: false
+version: 0
+
+hydra:
+  run:
+    dir: experiments/default_${hydra.job.override_dirname}
