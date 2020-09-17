@@ -1,27 +1,26 @@
 import numpy as np
-import tensorflow as tf
 import torch
 import torch.nn as nn
 
 class AttnRNN(nn.Module):
     '''AttnRNN implemented with same initializations'''
-    def __init__(self, input_size, num_units, max_seq_len, K=1, mode="lstm"):
+    def __init__(self, input_size, hidden_size, max_seq_len, K=1, mode="lstm"):
         super(AttnRNN, self).__init__()
         """
-        :param num_units: a scalar for outputs vector size
+        :param hidden_size: a scalar for outputs vector size
         :param K: a scalar for previous size
         """
-        self._num_units = num_units
+        self._hidden_size = hidden_size
         self.K = K
         self.is_tree = True
-        self.mode = mode
-        self.name = mode
+        self.mode = mode.lower()
+        self.name = mode.lower()
         self.max_seq_len = max_seq_len
         print("create a "+mode)
 
-        self.rnnCell = nn.RNNCell(input_size, num_units)
-        self.LSTMCell = nn.LSTMCell(input_size, num_units)
-        self.AttnLSTMCell = AttnLSTMCell(input_size, num_units, max_seq_len, K)
+        self.rnnCell = nn.RNNCell(input_size, hidden_size)
+        self.LSTMCell = nn.LSTMCell(input_size, hidden_size)
+        self.AttnLSTMCell = AttnLSTMCell(input_size, hidden_size, max_seq_len, K)
         
         #TODO: init lstm weights and biases
         nn.init.orthogonal_(self.rnnCell.weight_ih)
@@ -32,122 +31,76 @@ class AttnRNN(nn.Module):
     
     @property
     def state_size(self):
-        return (self._num_units, self._num_units)
+        return (self._hidden_size, self._hidden_size)
 
     @property
     def output_size(self):
-        return self._num_units
+        return self._hidden_size
 
     def forward(self, input, states=None):
-
-        if(states is None):
-            hidden = torch.zeros((input.size()[0],self._num_units)) # batch-size x hidden-size
-            cell = torch.zeros((input.size()[0],self._num_units))
-            states = ([hidden],[cell])
-        hidden_next, cell_next = self.AttnLSTMCell(input,states)
-        
-        return hidden_next, cell_next
-
-    def dynamic_rnn(self, inputs, states=None, scope=None):
         """
-        :param inputs: Tensor of shape [batch_size, times, input_size]
-                        `batch_size` will be preserved (known)
-                        `times` sequence length
-                        `input_size` must be static (known)
+        :param input: Tensor of shape [batch_size, sequence_length, input_size]
+                        `batch_size` will be preserved
+                        `input_size` must be static
         :param states: None create zero, else use input
                         states contain cells and hiddens
                         cells and hiddens is a list, K element,
                         element shape is [batch_size, outputs_size]
         :param scope: a String
-        :return: Tensor of shape [batch_size, times, outputs_size]
+        :return: Hidden states [batch_size, sequence_length, outputs_size], tuple of last cell and last hidden state
         """
-        batch_size = inputs.get_shape().as_list()[0]
-        times = inputs.get_shape().as_list()[1]
-        input_size = inputs.get_shape().as_list()[2]
-        outputs_size = self._num_units
-        outputs = []
-        with tf.variable_scope(scope or type(self).__name__):
-            if states == None:
-                cells = []
-                hiddens = []
-                for i in range(self.K):
-                    cell = tf.zeros([batch_size, outputs_size])
-                    hidden = tf.zeros([batch_size, outputs_size])
-                    cells.append(cell)
-                    hiddens.append(hidden)
-                states = (cells, hiddens)
-            else:
-                cells, hiddens = states
-            inps = tf.unstack(inputs,times,1)
-            for idx, inp in enumerate(inps):
-                if idx > 0: tf.get_variable_scope().reuse_variables()
-                output, cell = self.__call__(inp, states)
-                cells.append(cell)
-                hiddens.append(output)
-                cells = cells[1:self.K + 1]
-                hiddens = hiddens[1:self.K + 1]
-                states = (cells, hiddens)
-                outputs.append(output)
-        return outputs, states
+        batch_size = input.size()[0]
+        seq_len = input.size()[1]
 
-
-    def dynamic_rnn_v2(self, inputs, states=None, scope=None):
-        """
-        :param inputs:Tensor List. shape is times*[batch_size, input_size]
-                    `batch_size` will be preserved (known)
-                    `times` sequence length
-                    `input_size` must be static (known)
-        :param states: None create zero, else use input
-                        states contain cells and hiddens
-                        cells and hiddens is a list, child_size element,
-                        element shape is [batch_size, outputs_size]
-        :param scope: a String
-        :return: outputs: Tensor List, shape is times*[batch_size, outputs_size].
-        """
-        batch_size = inputs[0].get_shape().as_list()[0]
-        input_size = inputs[0].get_shape().as_list()[1]
-        outputs_size = self._num_units
+        outputs_size = self._hidden_size
         outputs = []
-        with tf.variable_scope(scope or type(self).__name__):
-            if states == None:
-                cells = []
-                hiddens = []
-                for i in range(self.K):
-                    cell = tf.zeros([batch_size, outputs_size])
-                    hidden = tf.zeros([batch_size, outputs_size])
-                    cells.append(cell)
-                    hiddens.append(hidden)
-                states = (cells, hiddens)
-            else:
-                cells, hiddens = states
-            for idx, inp in enumerate(inputs):
-                if idx > 0: tf.get_variable_scope().reuse_variables()
-                output, cell = self.__call__(inp, states)
+
+        if states == None:
+            cells = []
+            hiddens = []
+            for _ in range(self.K):
+                cell = torch.zeros((batch_size, outputs_size))
+                hidden = torch.zeros((batch_size, outputs_size))
                 cells.append(cell)
-                hiddens.append(output)
-                cells = cells[1:self.K + 1]
-                hiddens = hiddens[1:self.K + 1]
-                states = (cells, hiddens)
-                outputs.append(output)
+                hiddens.append(hidden)
+            states = (cells, hiddens)
+
+        cells, hiddens = states
+        for idx in range(seq_len):
+            if(self.mode == 'rnn'):
+                output = self.rnnCell(input[:,idx,:], hiddens[-1])
+                cell = output
+            elif(self.mode == 'lstm'):
+                output, cell = self.LSTMCell(input[:,idx,:], (hiddens[-1],cells[-1]))
+            elif(self.mode == 'attnlstm'):
+                output, cell = self.AttnLSTMCell(input[:,idx,:], states)
+            cells.append(cell)
+            hiddens.append(output)
+            cells = cells[1:self.K + 1]
+            hiddens = hiddens[1:self.K + 1]
+            states = (cells, hiddens)
+            outputs.append(output)
+            
+        outputs = torch.stack(outputs,dim=1)
         return outputs, states
 
 class AttnLSTMCell(nn.Module):
-    def __init__(self, input_size, num_units, max_seq_len, attn_size):
+    def __init__(self, input_size, hidden_size, max_seq_len, attn_size):
         super(AttnLSTMCell, self).__init__()
         """
-        :param num_units: a scalar for outputs vector size
+        :param hidden_size: a scalar for outputs vector size
         :param K: a scalar for previous size
         """
         
-        self.f_x_lin = nn.Linear(input_size,num_units)
-        self.o_x_lin = nn.Linear(input_size,num_units)
-        self.i_x_lin = nn.Linear(input_size,num_units)
-        self.u_x_lin = nn.Linear(input_size,num_units)
+        self.f_x_lin = nn.Linear(input_size,hidden_size)
+        self.o_x_lin = nn.Linear(input_size,hidden_size)
+        self.i_x_lin = nn.Linear(input_size,hidden_size)
+        self.u_x_lin = nn.Linear(input_size,hidden_size)
         
-        self.f_h_lin = nn.Linear(num_units,num_units)
-        self.o_h_lin = nn.Linear(num_units,num_units)
-        self.i_h_lin = nn.Linear(num_units,num_units)
-        self.u_h_lin = nn.Linear(num_units,num_units)
+        self.f_h_lin = nn.Linear(hidden_size,hidden_size)
+        self.o_h_lin = nn.Linear(hidden_size,hidden_size)
+        self.i_h_lin = nn.Linear(hidden_size,hidden_size)
+        self.u_h_lin = nn.Linear(hidden_size,hidden_size)
         
         nn.init.orthogonal_(self.f_x_lin.weight)
         nn.init.orthogonal_(self.o_x_lin.weight)
@@ -171,13 +124,13 @@ class AttnLSTMCell(nn.Module):
         
         self.h_k_lins = list()
         for i in range(max_seq_len):
-            current = nn.Linear(num_units,num_units)
+            current = nn.Linear(hidden_size,hidden_size)
             nn.init.eye_(current.weight)
             nn.init.zeros_(current.bias)
             self.h_k_lins.append(current)
         
         # Attention weights
-        self.attnW =   nn.Parameter(torch.normal(mean=torch.zeros((num_units, attn_size)),std=0.1))
+        self.attnW =   nn.Parameter(torch.normal(mean=torch.zeros((hidden_size, attn_size)),std=0.1))
         self.attnb =   nn.Parameter(torch.normal(mean=torch.zeros((1, attn_size)),std=0.1))
         self.attnW_u = nn.Parameter(torch.normal(mean=torch.zeros((attn_size, 1)),std=0.1))
         
