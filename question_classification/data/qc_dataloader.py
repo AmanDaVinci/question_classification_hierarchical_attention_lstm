@@ -1,4 +1,4 @@
-from Dataset import QCDataset
+from question_classification.data.qc_dataset import QCDataset
 from torch.utils.data import DataLoader
 from tokenizers import WordTokenizer
 from sklearn import preprocessing
@@ -10,8 +10,10 @@ import torch
 # todo: probably need to add 'tokenizer' argument to init and add self.tokenizer
 class QCDataLoader:
     """Dataloader for QC dataset found on https://cogcomp.seas.upenn.edu/Data/QA/QC/"""
+
     url = 'https://cogcomp.seas.upenn.edu/Data/QA/QC/'
     tokenizers = ['WordTokenizer']
+
     def __init__(self, tokenizer, filename='train_5500.label', split=(4362, 545, 545), batch_size=(64, 128, 128)):
         """
         :param tokenizer: str
