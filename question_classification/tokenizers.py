@@ -119,9 +119,10 @@ class CharacterTokenizer(Tokenizer):
     def vocab_size(self):
         return len(self.c2i)
 
-    def encode(self, x, add_special_tokens=True):
+    def encode(self, x, add_special_tokens=False):
 
-        encoded = [self.c2i.get(c, self.unk_token_id) for c in x]
+        encoded = [[self.c2i.get(c, self.unk_token_id) for c in word] for word in x.split()]
+
         if add_special_tokens:
             encoded = [self.bos_token_id] + encoded + [self.eos_token_id]
         return encoded
@@ -130,9 +131,12 @@ class CharacterTokenizer(Tokenizer):
 
         if isinstance(x, torch.Tensor):
             x = x.cpu().numpy()
-        decoded = [self.i2c[i] for i in x]
+
+        decoded = [[self.i2c[i] for i in word] for word in x]
         if skip_special_tokens:
-            decoded = [t for t in decoded if t not in self.remove_in_decode]
+            decoded = [[t for t in word if t not in self.remove_in_decode] for word in decoded]
+
+        decoded = [''.join(word) for word in decoded]
         return ' '.join(decoded)
 
     def train_on_data(self, data):
@@ -142,7 +146,7 @@ class CharacterTokenizer(Tokenizer):
         """
         char_counts = Counter()
         for sentence in data:
-            chars = [char for char in sentence]
+            chars = [char for word in sentence.split() for char in word]
             char_counts.update(chars)
 
         # Make vocabularies, sorted alphabetically
