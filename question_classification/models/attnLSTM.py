@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class AttnRNN(nn.Module):
     '''AttnRNN implemented with same initializations'''
-    def __init__(self, input_size, hidden_size, max_seq_len, K=1, mode="lstm"):
+    def __init__(self, input_size, hidden_size, max_seq_len=50, K=1, mode="lstm"):
         super(AttnRNN, self).__init__()
         """
         :param hidden_size: a scalar for outputs vector size
