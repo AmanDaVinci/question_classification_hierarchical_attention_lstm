@@ -2,17 +2,19 @@ import torch
 from collections import defaultdict, Counter
 
 
-class WordTokenizer:
-    """
-    Simple word tokenizer with same interface as Huggingface tokenizer.
-    """
-
+class Tokenizer:
     pad_token = '[PAD]'
     bos_token = '[BOS]'
     eos_token = '[EOS]'
     unk_token = '[UNK]'
     special_tokens = [pad_token, bos_token, eos_token, unk_token]
     remove_in_decode = {pad_token, bos_token, eos_token}
+
+
+class WordTokenizer(Tokenizer):
+    """
+    Simple word tokenizer with same interface as Huggingface tokenizer.
+    """
 
     def __init__(self, data, max_vocab_size=100000):
         if max_vocab_size < len(self.special_tokens):
@@ -102,3 +104,77 @@ class WordTokenizer:
             i2w[w2i[word]] = word
 
         return dict(w2i), i2w
+
+
+class CharacterTokenizer(Tokenizer):
+
+    def __init__(self, data):
+        self.c2i, self.i2c = self.train_on_data(data)
+        self.pad_token_id = self.c2i[self.pad_token]
+        self.bos_token_id = self.c2i[self.bos_token]
+        self.eos_token_id = self.c2i[self.eos_token]
+        self.unk_token_id = self.c2i[self.unk_token]
+
+    @property
+    def vocab_size(self):
+        return len(self.c2i)
+
+    def encode(self, x, add_special_tokens=True):
+
+        encoded = [self.c2i.get(c, self.unk_token_id) for c in x]
+        if add_special_tokens:
+            encoded = [self.bos_token_id] + encoded + [self.eos_token_id]
+        return encoded
+
+    def decode(self, x, skip_special_tokens=True):
+
+        if isinstance(x, torch.Tensor):
+            x = x.cpu().numpy()
+        decoded = [self.i2c[i] for i in x]
+        if skip_special_tokens:
+            decoded = [t for t in decoded if t not in self.remove_in_decode]
+        return ' '.join(decoded)
+
+    def train_on_data(self, data):
+        """
+        Returns:
+            tuple: c2i, i2c dicts
+        """
+        char_counts = Counter()
+        for sentence in data:
+            chars = [char for char in sentence]
+            char_counts.update(chars)
+
+        # Make vocabularies, sorted alphabetically
+        c2i = defaultdict(lambda: len(c2i))
+        i2c = dict()
+
+        # Default tokens
+        for t in self.special_tokens:
+            i2c[c2i[t]] = t
+
+        # Give each char a token
+        characters = list(char_counts.keys())
+        for char in characters:
+            i2c[c2i[char]] = char
+
+        return dict(c2i), i2c
+
+
+# test block
+if __name__ == "__main__":
+    sen = ['good morning lovely people']
+    tokenizer = WordTokenizer(sen)
+
+    a = tokenizer.encode(sen[0])
+    b = tokenizer.decode(a, skip_special_tokens=False)
+    print(a)
+    print(b)
+    print(sen)
+    print('---')
+
+    tokenizer2 = CharacterTokenizer(sen)
+    xx = tokenizer2.encode(sen[0])
+    yy = tokenizer2.decode(xx, skip_special_tokens=False)
+    print(xx)
+    print(yy)
