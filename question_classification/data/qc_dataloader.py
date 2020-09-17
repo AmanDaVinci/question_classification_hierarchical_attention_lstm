@@ -36,7 +36,7 @@ class QCDataLoader:
         try:
             with open(f'datasets/{filename}', 'xb') as file:
                 print(f'QCDataLoader: Downloading Dataset {filename}')
-                response = requests.get(self.url, allow_redirects=True)
+                response = requests.get(self.url/{filename}, allow_redirects=True)
                 file.write(response.content)
         except FileExistsError:
             print(f'QCDataLoader: Dataset {filename} already present')
