@@ -1,9 +1,9 @@
 from question_classification.data.qc_dataset import QCDataset
 from torch.utils.data import DataLoader
-from tokenizers import WordTokenizer
+import os
+from tokenizers import WordTokenizer, CharacterTokenizer
 from sklearn import preprocessing
 import requests
-import os
 import torch
 
 
@@ -12,7 +12,7 @@ class QCDataLoader:
     """Dataloader for QC dataset found on https://cogcomp.seas.upenn.edu/Data/QA/QC/"""
 
     url = 'https://cogcomp.seas.upenn.edu/Data/QA/QC/'
-    tokenizers = ['WordTokenizer']
+    tokenizers = ['WordTokenizer', 'CharacterTokenizer']
 
     def __init__(self, tokenizer, filename='train_5500.label', split=(4362, 545, 545), batch_size=(64, 128, 128)):
         """
@@ -72,6 +72,14 @@ class QCDataLoader:
             enc_question = []
             for q in q_str:
                 enc_question.append(self.tokenizer.encode(q, add_special_tokens=False))
+            collate_fn = self._loader_collate_fn
+        elif tokenizer == 'CharacterTokenizer':
+            q_str = [" ".join(q) for q in questions]
+            self.tokenizer = CharacterTokenizer(q_str)
+            enc_question = []
+            for q in q_str:
+                enc_question.append(self.tokenizer.encode(q, add_special_tokens=False))
+            collate_fn = self._char_collate_fn
         else:
             raise NotImplementedError
 
@@ -82,11 +90,11 @@ class QCDataLoader:
 
         # make Dataloaders
         self.train_loader = DataLoader(self._train_data, batch_size=batch_size[0], shuffle=True,
-                                       collate_fn=self._loader_collate_fn)
+                                       collate_fn=collate_fn)
         self.valid_loader = DataLoader(self._valid_data, batch_size=batch_size[1], shuffle=False,
-                                       collate_fn=self._loader_collate_fn)
+                                       collate_fn=collate_fn)
         self.test_loader =  DataLoader(self._test_data, batch_size=batch_size[2], shuffle=False,
-                                       collate_fn=self._loader_collate_fn)
+                                       collate_fn=collate_fn)
 
     @staticmethod
     def _loader_collate_fn(batch):
@@ -95,6 +103,19 @@ class QCDataLoader:
         lengths = [len(q) for q in questions]
         max_length = max(lengths)
         padded = [q + [0] * (max_length - len(q)) for q in questions]
+        return torch.LongTensor(padded), torch.LongTensor(labels)
+
+    @staticmethod
+    def _char_collate_fn(batch):
+        """Collate function for DataLoader"""
+        questions, labels = zip(*batch)
+        sen_lengths = [len(q) for q in questions]
+        word_lengths = [len(word) for sen in questions for word in sen]
+        max_sen_length = max(sen_lengths)
+        max_word_length = max(word_lengths)
+
+        padded = [q + [[0]] * (max_sen_length - len(q)) for q in questions]
+        padded = [[word + [0] * (max_word_length - len(word)) for word in sentence] for sentence in padded]
         return torch.LongTensor(padded), torch.LongTensor(labels)
 
 
@@ -124,4 +145,16 @@ if __name__ == "__main__":
         print(x)
         print(y)
         print(type(x))
+        break
+
+    print('----')
+    DL2 = QCDataLoader('CharacterTokenizer')
+
+    for x,y in DL2.train_loader:
+        print(x)
+        print(DL2.tokenizer.decode(x[0]))
+        print(y)
+        print(type(x))
+        print(x.shape)
+        print(x[0])
         break
