@@ -1,7 +1,7 @@
 from question_classification.data.qc_dataset import QCDataset
 from torch.utils.data import DataLoader
 import os
-from tokenizers import WordTokenizer, CharacterTokenizer
+from question_classification.tokenizers import WordTokenizer, CharacterTokenizer
 from sklearn import preprocessing
 import requests
 import torch
@@ -36,7 +36,7 @@ class QCDataLoader:
         try:
             with open(f'datasets/{filename}', 'xb') as file:
                 print(f'QCDataLoader: Downloading Dataset {filename}')
-                response = requests.get(self.url/{filename}, allow_redirects=True)
+                response = requests.get(self.url + "/" + filename, allow_redirects=True)
                 file.write(response.content)
         except FileExistsError:
             print(f'QCDataLoader: Dataset {filename} already present')
@@ -50,7 +50,9 @@ class QCDataLoader:
                 labels.append(tokens[0])
                 questions.append(tokens[1:])
 
-        # check validity of given split
+        self.max_sen_length = max([len(q) for q in questions])
+        self.max_word_length = max([len(word) for sen in questions for word in sen])
+
         total = len(labels)
         if not sum(split) == total:
             raise ValueError(f'QCDataLoader: invalid splits; total of {total} exceeded')
@@ -79,21 +81,21 @@ class QCDataLoader:
             enc_question = []
             for q in q_str:
                 enc_question.append(self.tokenizer.encode(q, add_special_tokens=False))
-            collate_fn = self._char_collate_fn
+            collate_fn = self._create_char_collate_fn()
         else:
             raise NotImplementedError
 
         # make torch datasets
         self._train_data = QCDataset(enc_question[0:train], enc_labels[0:train])
         self._valid_data = QCDataset(enc_question[train:valid], enc_labels[train:valid])
-        self._test_data  = QCDataset(enc_question[valid:test], enc_labels[valid:test])
+        self._test_data = QCDataset(enc_question[valid:test], enc_labels[valid:test])
 
         # make Dataloaders
         self.train_loader = DataLoader(self._train_data, batch_size=batch_size[0], shuffle=True,
                                        collate_fn=collate_fn)
         self.valid_loader = DataLoader(self._valid_data, batch_size=batch_size[1], shuffle=False,
                                        collate_fn=collate_fn)
-        self.test_loader =  DataLoader(self._test_data, batch_size=batch_size[2], shuffle=False,
+        self.test_loader = DataLoader(self._test_data, batch_size=batch_size[2], shuffle=False,
                                        collate_fn=collate_fn)
 
     @staticmethod
@@ -105,18 +107,18 @@ class QCDataLoader:
         padded = [q + [0] * (max_length - len(q)) for q in questions]
         return torch.LongTensor(padded), torch.LongTensor(labels)
 
-    @staticmethod
-    def _char_collate_fn(batch):
-        """Collate function for DataLoader"""
-        questions, labels = zip(*batch)
-        sen_lengths = [len(q) for q in questions]
-        word_lengths = [len(word) for sen in questions for word in sen]
-        max_sen_length = max(sen_lengths)
-        max_word_length = max(word_lengths)
+    def _create_char_collate_fn(self):
+        def _char_collate_fn(batch):
+            """Collate function for DataLoader"""
+            questions, labels = zip(*batch)
 
-        padded = [q + [[0]] * (max_sen_length - len(q)) for q in questions]
-        padded = [[word + [0] * (max_word_length - len(word)) for word in sentence] for sentence in padded]
-        return torch.LongTensor(padded), torch.LongTensor(labels)
+            max_sen_length = self.max_sen_length
+            max_word_length = self.max_word_length
+
+            padded = [q + [[0]] * (max_sen_length - len(q)) for q in questions]
+            padded = [[word + [0] * (max_word_length - len(word)) for word in sentence] for sentence in padded]
+            return torch.LongTensor(padded), torch.LongTensor(labels)
+        return _char_collate_fn
 
 
 if __name__ == "__main__":
