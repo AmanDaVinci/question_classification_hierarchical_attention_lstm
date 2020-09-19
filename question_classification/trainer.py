@@ -81,7 +81,8 @@ class Trainer():
 
         self.logger.info(f"Loading data {config.data.name} ...")
         data_dir = DATA_DIR / config.data.name
-        vocab_file = data_dir / f"vocab_{config.model.vocab_size}.json"
+        token_level = "char" if config.training.tokenize_characters else "word"
+        vocab_file = data_dir / f"vocab_{token_level}_{config.model.vocab_size}.json"
         train_file = data_dir / "train.txt"
         valid_file = data_dir / "valid.txt"
         test_file = data_dir / "test.txt"
