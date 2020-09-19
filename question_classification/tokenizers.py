@@ -88,7 +88,7 @@ class WordTokenizer(Tokenizer):
                 Defaults to None.
         
         Returns:
-            tuple: w2i, i2w dicts
+            tuple(dict,dict,dict): c2i, i2c, label2idx
         """
         # if max_vocab_size < len(self.special_tokens):
         #     raise ValueError("Minimum vocab size is {}.".format(self.special_tokens))
@@ -141,8 +141,16 @@ class WordTokenizer(Tokenizer):
 
 class CharacterTokenizer(Tokenizer):
 
-    def __init__(self, data):
-        self.c2i, self.i2c = self.train_on_data(data)
+    def __init__(self, text_file: Path = None,
+                 vocab_file: Path = None):
+        if text_file and vocab_file:
+            self.c2i, self.i2c, self.label2idx = self.train(text_file)
+            self.save(vocab_file)
+        elif vocab_file:
+            self.c2i, self.i2c, self.label2idx = self.load(vocab_file)
+        else:
+            raise ValueError("Either text_file or vocab_file must be passed.")
+
         self.pad_token_id = self.c2i[self.pad_token]
         self.bos_token_id = self.c2i[self.bos_token]
         self.eos_token_id = self.c2i[self.eos_token]
@@ -196,6 +204,67 @@ class CharacterTokenizer(Tokenizer):
             i2c[c2i[char]] = char
 
         return dict(c2i), i2c
+
+    def train(self, text_file, max_vocab_size=None):
+        """
+        Train this tokenizer on a list of sentences.
+        Method, split sentences, aggragate character counts, make a char to index (c2i)
+        and index to char (i2c) dictionary from the max_vocab_size most common characters.
+        
+        Args:
+            text_file (str): Text to train the tokenizer on.
+            max_vocab_size (int, optional): If defined, only keep the max_vocab_size most common characters in the vocabulary. 
+                Defaults to None.
+        
+        Returns:
+            tuple(dict,dict,dict): c2i, i2c, label2idx
+        """
+        # if max_vocab_size < len(self.special_tokens):
+        #     raise ValueError("Minimum vocab size is {}.".format(self.special_tokens))
+
+        with open(text_file, "r") as f:
+            text = f.readlines()
+            char_counts = Counter()
+            labels = []
+            for line in text:
+                line = line.split()
+                label_str, question_str = line[0], line[1:]
+                chars = [char for word in question_str for char in word]
+                char_counts.update(chars)
+                labels.append(label_str)
+
+        # Make vocabularies, sorted alphabetically
+        label2idx = {label: idx for idx, label in enumerate(set(labels))}
+        c2i = defaultdict(lambda: len(c2i))
+        i2c = dict()
+
+        # Default tokens
+        for t in self.special_tokens:
+            i2c[c2i[t]] = t
+
+        # Give each char a token
+        characters = list(char_counts.keys())
+        for char in characters:
+            i2c[c2i[char]] = char
+
+        return dict(c2i), i2c, label2idx
+
+    def save(self, vocab_file: Path):
+        """ Save the tokenizer state """
+        with open(vocab_file, "w") as f:
+            vocab = {
+                "c2i": self.c2i,
+                "i2c": self.i2c,
+                "label2idx": self.label2idx
+            }
+            json.dump(vocab, f, sort_keys=True)
+
+    def load(self, vocab_file: Path):
+        """ Load the tokenizer state """
+        with open(vocab_file, "r") as f:
+            vocab = json.load(f)
+        return vocab["c2i"], vocab["i2c"], vocab["label2idx"]
+
 
 
 # test block
