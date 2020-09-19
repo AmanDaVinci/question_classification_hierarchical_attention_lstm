@@ -1,4 +1,7 @@
+import json
 import torch
+from typing import List
+from pathlib import Path
 from collections import defaultdict, Counter
 
 
@@ -16,11 +19,15 @@ class WordTokenizer(Tokenizer):
     Simple word tokenizer with same interface as Huggingface tokenizer.
     """
 
-    def __init__(self, data, max_vocab_size=100000):
-        if max_vocab_size < len(self.special_tokens):
-            raise ValueError("Minimum vocab size is {}.".format(self.special_tokens))
-        self.max_vocab_size = max_vocab_size
-        self.w2i, self.i2w = self.train_on_data(data, max_vocab_size)
+    def __init__(self, text_file: Path = None,
+                 vocab_file: Path = None):
+        if text_file and vocab_file:
+            self.w2i, self.i2w, self.label2idx = self.train(text_file)
+            self.save(vocab_file)
+        elif vocab_file:
+            self.w2i, self.i2w, self.label2idx = self.load(vocab_file)
+        else:
+            raise ValueError("Either text_file or vocab_file must be passed.")
 
         self.pad_token_id = self.w2i[self.pad_token]
         self.bos_token_id = self.w2i[self.bos_token]
@@ -69,25 +76,35 @@ class WordTokenizer(Tokenizer):
             decoded = [t for t in decoded if t not in self.remove_in_decode]
         return ' '.join(decoded)
 
-    def train_on_data(self, data, max_vocab_size=None):
+    def train(self, text_file, max_vocab_size=None):
         """
         Train this tokenizer on a list of sentences.
         Method, split sentences, aggragate word counts, make a word to index (w2i)
         and index to word (i2w) dictionary from the max_vocab_size most common words.
         
         Args:
-            data (Iterable): Iterable of strings, where each string is a sentence.
+            text_file (str): Text to train the tokenizer on.
             max_vocab_size (int, optional): If defined, only keep the max_vocab_size most common words in the vocabulary. 
                 Defaults to None.
         
         Returns:
             tuple: w2i, i2w dicts
         """
-        word_counts = Counter()
-        for sentence in data:
-            word_counts.update(sentence.split())
+        # if max_vocab_size < len(self.special_tokens):
+        #     raise ValueError("Minimum vocab size is {}.".format(self.special_tokens))
+
+        with open(text_file, "r") as f:
+            text = f.readlines()
+            word_counts = Counter()
+            labels = []
+            for line in text:
+                line = line.split()
+                label_str, question_str = line[0], line[1:]
+                word_counts.update(question_str)
+                labels.append(label_str)
 
         # Make vocabularies, sorted alphabetically
+        label2idx = {label: idx for idx, label in enumerate(set(labels))}
         w2i = defaultdict(lambda: len(w2i))
         i2w = dict()
 
@@ -103,7 +120,23 @@ class WordTokenizer(Tokenizer):
         for word in sorted(words):
             i2w[w2i[word]] = word
 
-        return dict(w2i), i2w
+        return dict(w2i), i2w, label2idx
+
+    def save(self, vocab_file: Path):
+        """ Save the tokenizer state """
+        with open(vocab_file, "w") as f:
+            vocab = {
+                "w2i": self.w2i,
+                "i2w": self.i2w,
+                "label2idx": self.label2idx
+            }
+            json.dump(vocab, f, sort_keys=True)
+
+    def load(self, vocab_file: Path):
+        """ Load the tokenizer state """
+        with open(vocab_file, "r") as f:
+            vocab = json.load(f)
+        return vocab["w2i"], vocab["i2w"], vocab["label2idx"]
 
 
 class CharacterTokenizer(Tokenizer):
