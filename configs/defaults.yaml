@@ -1,6 +1,6 @@
 defaults:
-  - training: on_gpu
-  - model: BiGRU
+  - training: on_cpu
+  - model: lstm
   - data: qc
 
 seed: 42
