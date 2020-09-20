@@ -3,7 +3,6 @@ import requests
 import torch
 from typing import Tuple
 from pathlib import Path
-from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 
 from question_classification.tokenizers import Tokenizer, WordTokenizer, CharacterTokenizer
@@ -15,7 +14,6 @@ class QCDataset(Dataset):
     url = "https://cogcomp.seas.upenn.edu/Data/QA/QC/"
     train_file = "train_5500.label"
     test_file = "TREC_10.label"
-    train_valid_split = 4000
     
     def __init__(self, data_file: Path,
                  tokenizer: Tokenizer,
@@ -71,7 +69,8 @@ class QCDataset(Dataset):
     
     @classmethod
     def prepare(self, data_dir: Path,
-                tokenize_characters: bool = False) -> None:
+                tokenize_characters: bool = False,
+                train_valid_split: int = 4000) -> None:
         """ Download the data and prepare train, valid and test files 
 
         Parameters
@@ -80,6 +79,8 @@ class QCDataset(Dataset):
             Path to the directory for storing question classification data.
         tokenize_characters: bool
             Whether to tokenize at character level. Defaults to word level.
+        train_test_split: int
+            Index where the train file will be split into train and validation set.
         """
         # create directory for storage
         data_dir.mkdir(parents=True)
@@ -95,8 +96,8 @@ class QCDataset(Dataset):
              open(data_dir/"train.txt", "w") as train_writer,\
              open(data_dir/"valid.txt", "w") as valid_writer:
              data = reader.readlines()
-             train_data = data[:self.train_valid_split]
-             valid_data = data[self.train_valid_split:]
+             train_data = data[:train_valid_split]
+             valid_data = data[train_valid_split:]
              train_writer.writelines(train_data)
              valid_writer.writelines(valid_data)
         os.remove(data_dir/self.train_file)
