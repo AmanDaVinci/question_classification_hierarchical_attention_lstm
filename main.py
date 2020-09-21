@@ -11,13 +11,13 @@ from omegaconf import DictConfig
 from question_classification.trainer import Trainer
 
 
-@hydra.main(config_path="configs/defaults.yaml")
+@hydra.main(config_path="configs", config_name="defaults.yaml")
 def main(config: DictConfig) -> None:
     """ Runs the trainer based on the given experiment configuration """
 
     if config.test:
-        # TODO: clean up current working directory with inference=true
-        experiment_path = os.getcwd().replace("inference=true,", "")
+        # TODO: clean up current working directory with test=true
+        experiment_path = os.getcwd().replace("test=true,", "")
         trainer = Trainer(config, experiment_path)
         summary, report = trainer.test()
         print(summary)

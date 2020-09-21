@@ -1,6 +1,10 @@
-training:
-  device: 'cpu'
-  lr: 1e-3
-  epochs: 1
-  valid_freq: 100
-  save_freq: 1000
+# @package _group_
+device: 'cpu'
+lr: 1e-3
+lr_lambda: 0.95
+epochs: 1
+valid_freq: 100
+save_freq: 1000
+tokenize_characters: False
+train_report_freq: 50
+max_grad_norm: 2
