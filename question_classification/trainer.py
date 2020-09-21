@@ -233,7 +233,10 @@ class Trainer():
 
         Y, Y_pred = np.concatenate(Y), np.concatenate(Y_pred)
         question_labels = list(self.tokenizer.label2idx.keys())
-        report = classification_report(Y, Y_pred, target_names=question_labels, output_dict=True)
+        report = classification_report(Y, Y_pred,
+                                       labels=list(range(len(question_labels))), 
+                                       target_names=question_labels,
+                                       output_dict=True)
         mean_accuracy = np.mean(accuracies)
         mean_loss = np.mean(losses)
         mean_f1_score = np.mean(f1_scores)
