@@ -14,7 +14,7 @@ class QCDataset(Dataset):
     url = "https://cogcomp.seas.upenn.edu/Data/QA/QC/"
     train_file = "train_5500.label"
     test_file = "TREC_10.label"
-    
+
     def __init__(self, data_file: Path,
                  tokenizer: Tokenizer,
                  hierarchical_classification: bool = False) -> None:
@@ -59,19 +59,19 @@ class QCDataset(Dataset):
         questions, labels = zip(*batch)
         sen_lengths = [len(q) for q in questions]
         word_lengths = [len(word) for sen in questions for word in sen]
-        max_sen_length = max(sen_lengths)
-        max_word_length = max(word_lengths)
+        max_sen_length = 37
+        max_word_length = 28
 
         padded = [q + [[0]] * (max_sen_length - len(q)) for q in questions]
         padded = [[word + [0] * (max_word_length - len(word)) for word in sentence] for sentence in padded]
         return torch.LongTensor(padded), torch.LongTensor(labels)
 
-    
+
     @classmethod
     def prepare(self, data_dir: Path,
                 tokenize_characters: bool = False,
                 train_valid_split: int = 4000) -> None:
-        """ Download the data and prepare train, valid and test files 
+        """ Download the data and prepare train, valid and test files
 
         Parameters
         ---
@@ -90,8 +90,8 @@ class QCDataset(Dataset):
             response = requests.get(self.url+"/"+self.train_file,
                                     allow_redirects=True)
             file.write(response.content)
-        
-        # split into train and validation 
+
+        # split into train and validation
         with open(data_dir/self.train_file, "r", errors="replace") as reader,\
              open(data_dir/"train.txt", "w") as train_writer,\
              open(data_dir/"valid.txt", "w") as valid_writer:

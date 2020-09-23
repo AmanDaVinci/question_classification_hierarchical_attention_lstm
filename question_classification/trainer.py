@@ -51,7 +51,7 @@ class Trainer():
         self.exp_dir = Path(experiment_path)
         self.logger = logging.getLogger(__name__)
 
-        # Checkpoint directory to save models        
+        # Checkpoint directory to save models
         self.checkpoint_dir = self.exp_dir / CHECKPOINTS
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_exists = len(list(self.checkpoint_dir.glob('*'))) > 0
@@ -101,8 +101,8 @@ class Trainer():
             self.tokenizer = CharacterTokenizer(train_file, vocab_file)\
                              if config.training.tokenize_characters else\
                              WordTokenizer(train_file, vocab_file)
-            
-        train_dataset = QCDataset(train_file, self.tokenizer) 
+
+        train_dataset = QCDataset(train_file, self.tokenizer)
         valid_dataset = QCDataset(valid_file, self.tokenizer)
         test_dataset = QCDataset(test_file, self.tokenizer)
         collate_fn = QCDataset._char_collate_fn\
@@ -126,7 +126,7 @@ class Trainer():
 
     def run(self):
         """Run the train-eval loop
-        
+
         If the loop is interrupted manually, finalization will still be executed
         """
         try:
@@ -181,11 +181,11 @@ class Trainer():
                 f1_scores.append(results['f1_score'])
                 Y.append(results['y'])
                 Y_pred.append(results['y_pred'])
-            
+
         Y, Y_pred = np.concatenate(Y), np.concatenate(Y_pred)
         question_labels = list(self.tokenizer.label2idx.keys())
         report = classification_report(Y, Y_pred,
-                                       labels=list(range(len(question_labels))), 
+                                       labels=list(range(len(question_labels))),
                                        target_names=question_labels,
                                        output_dict=True)
         # write classification report to tensorboard
@@ -200,7 +200,7 @@ class Trainer():
         if mean_loss < self.best_loss:
             self.best_loss = mean_loss
             self.save_checkpoint(BEST_MODEL_FNAME)
-        
+
         self.writer.add_scalar('Valid/Accuracy', mean_accuracy, self.current_iter)
         self.writer.add_scalar('Valid/F1-Score', mean_f1_score, self.current_iter)
         self.writer.add_scalar('Valid/Loss', mean_loss, self.current_iter)
@@ -234,7 +234,7 @@ class Trainer():
         Y, Y_pred = np.concatenate(Y), np.concatenate(Y_pred)
         question_labels = list(self.tokenizer.label2idx.keys())
         report = classification_report(Y, Y_pred,
-                                       labels=list(range(len(question_labels))), 
+                                       labels=list(range(len(question_labels))),
                                        target_names=question_labels,
                                        output_dict=True)
         mean_accuracy = np.mean(accuracies)
@@ -250,7 +250,7 @@ class Trainer():
         """ Iterate over one batch """
         x = batch[0].to(self.config.training.device)
         y = batch[1].to(self.config.training.device)
-        
+
         if training:
             self.model.train()
             self.opt.zero_grad()
@@ -333,12 +333,11 @@ class Trainer():
 
         except OSError:
             self.logger.error(f"No checkpoint exists @ {self.checkpoint_dir}")
-        
+
     def finalize(self):
         """Finalize all necessary operations before stopping
-        
+
         Saves checkpoint
         TODO: decide other finalization operations
         """
         self.save_checkpoint()
-

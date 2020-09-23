@@ -1,23 +1,22 @@
 import torch
 import torch.nn as nn
-import numpy as np
 
 from question_classification.models.highway import Highway
 
 
 class HierRNN(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, low_hidden_size, high_hidden_size, num_classes, char_vocab_size=28, word_vocab_size=37, use_highway=False):
+    def __init__(self, vocab_size, embedding_dim, low_hidden_size, high_hidden_size, num_classes, max_word_length=28, max_sen_length=37, use_highway=False):
         # # TODO: Workout the dimensions.
         # TODO: Make it work with att lstm
         super(HierRNN, self).__init__()
         # The five layers of the hierchical lstm:
-        self.character_embedding = nn.Embedding(num_embeddings, embedding_dim)
+        self.character_embedding = nn.Embedding(vocab_size, embedding_dim)
 
         if use_highway:
-            self.highway = Highway(low_hidden_size * char_vocab_size, low_hidden_size * max_character_len)
+            self.highway = Highway(low_hidden_size * max_word_length, low_hidden_size * max_word_length)
         self.low_lstm = nn.LSTM(input_size=embedding_dim, hidden_size=low_hidden_size, batch_first=True)
-        self.high_lstm = nn.LSTM(input_size=low_hidden_size * char_vocab_size, hidden_size=high_hidden_size, batch_first=True)
-        self.output_layer = nn.Linear(high_hidden_size * word_vocab_size, num_classes)
+        self.high_lstm = nn.LSTM(input_size=low_hidden_size * max_word_length, hidden_size=high_hidden_size, batch_first=True)
+        self.output_layer = nn.Linear(high_hidden_size * max_sen_length, num_classes)
         self.low_hidden_size = low_hidden_size
 
         self.use_highway = use_highway
@@ -40,7 +39,8 @@ class HierRNN(nn.Module):
             if self.use_highway:
                 word_repr = self.highway(word_repr)
             sentence.append(word_repr)
-        sentence = torch.stack(sentence)
+
+        sentence = torch.stack(sentence, dim=1)
         sentence_repr, hidden = self.high_lstm(sentence)
         output = self.output_layer(sentence_repr.contiguous().view((batch_size, - 1)))
         return output

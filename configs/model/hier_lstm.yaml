@@ -1,0 +1,10 @@
+# @package _group_
+_target_: question_classification.models.hier_qc.HierRNN
+vocab_size: 100
+embedding_dim: 20
+low_hidden_size: 40
+high_hidden_size: 40
+num_classes: 50
+max_sen_length: 37
+max_word_length: 28
+use_highway: True
