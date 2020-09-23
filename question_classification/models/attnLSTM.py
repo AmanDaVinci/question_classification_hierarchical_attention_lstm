@@ -16,7 +16,6 @@ class AttnRNN(nn.Module):
         self.mode = mode.lower()
         self.name = mode.lower()
         self.max_seq_len = max_seq_len
-        print("create a "+mode)
 
         self.rnnCell = nn.RNNCell(input_size, hidden_size)
         self.LSTMCell = nn.LSTMCell(input_size, hidden_size)
@@ -61,6 +60,9 @@ class AttnRNN(nn.Module):
             for _ in range(self.K):
                 cell = torch.zeros((batch_size, outputs_size))
                 hidden = torch.zeros((batch_size, outputs_size))
+                if(input.is_cuda):
+                    cell = cell.cuda()
+                    hidden = hidden.cuda()
                 cells.append(cell)
                 hiddens.append(hidden)
             states = (cells, hiddens)
@@ -122,7 +124,7 @@ class AttnLSTMCell(nn.Module):
         nn.init.zeros_(self.i_h_lin.bias)
         nn.init.zeros_(self.u_h_lin.bias)
         
-        self.h_k_lins = list()
+        self.h_k_lins = nn.ModuleList()
         for i in range(max_seq_len):
             current = nn.Linear(hidden_size,hidden_size)
             nn.init.eye_(current.weight)
@@ -134,6 +136,7 @@ class AttnLSTMCell(nn.Module):
         self.attnb =   nn.Parameter(torch.normal(mean=torch.zeros((1, attn_size)),std=0.1))
         self.attnW_u = nn.Parameter(torch.normal(mean=torch.zeros((attn_size, 1)),std=0.1))
         
+
     def forward(self, input, states):
         
         (hiddens, cells) = states
@@ -144,7 +147,6 @@ class AttnLSTMCell(nn.Module):
         i_gt = torch.sigmoid(i)
 
         hs = list()
-        
         for k, (cell, hid) in enumerate(zip(cells, hiddens)):
             h_k = self.h_k_lins[k](hid*i_gt)
             hs.append(h_k)
