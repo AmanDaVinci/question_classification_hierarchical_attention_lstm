@@ -6,7 +6,7 @@ from question_classification.models.highway import Highway
 
 
 class HierRNN(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, low_hidden_size, high_hidden_size, num_classes, max_character_len, max_sentence_len, use_highway=False):
+    def __init__(self, num_embeddings, embedding_dim, low_hidden_size, high_hidden_size, num_classes, char_vocab_size=28, word_vocab_size=37, use_highway=False):
         # # TODO: Workout the dimensions.
         # TODO: Make it work with att lstm
         super(HierRNN, self).__init__()
@@ -14,10 +14,10 @@ class HierRNN(nn.Module):
         self.character_embedding = nn.Embedding(num_embeddings, embedding_dim)
 
         if use_highway:
-            self.highway = Highway(low_hidden_size * max_character_len, low_hidden_size * max_character_len)
+            self.highway = Highway(low_hidden_size * char_vocab_size, low_hidden_size * max_character_len)
         self.low_lstm = nn.LSTM(input_size=embedding_dim, hidden_size=low_hidden_size, batch_first=True)
-        self.high_lstm = nn.LSTM(input_size=low_hidden_size * max_character_len, hidden_size=high_hidden_size, batch_first=True)
-        self.output_layer = nn.Linear(high_hidden_size * max_sentence_len, num_classes)
+        self.high_lstm = nn.LSTM(input_size=low_hidden_size * char_vocab_size, hidden_size=high_hidden_size, batch_first=True)
+        self.output_layer = nn.Linear(high_hidden_size * word_vocab_size, num_classes)
         self.low_hidden_size = low_hidden_size
 
         self.use_highway = use_highway
