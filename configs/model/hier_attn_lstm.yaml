@@ -1,10 +1,10 @@
 # @package _group_
 _target_: question_classification.models.hier_attn_qc.HierAttnRNN
-vocab_size: 80000
-embedding_dim: 128
+vocab_size: 100
+embedding_dim: 20
 low_hidden_size: 40
 high_hidden_size: 40
 num_classes: 50
-max_character_len: 28
+max_word_len: 28
 max_sentence_len: 37
 use_highway: True

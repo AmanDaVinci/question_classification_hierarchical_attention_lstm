@@ -7,7 +7,7 @@ from question_classification.models.attnLSTM import AttnRNN
 
 
 class HierAttnRNN(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, low_hidden_size, high_hidden_size, num_classes, max_character_len, max_sentence_len, use_highway=False):
+    def __init__(self, vocab_size, embedding_dim, low_hidden_size, high_hidden_size, num_classes, max_word_len=27, max_sentence_len=38, use_highway=False):
         # # TODO: Workout the dimensions.
         # TODO: Make it work with att lstm
         super(HierAttnRNN, self).__init__()
@@ -15,9 +15,9 @@ class HierAttnRNN(nn.Module):
         self.character_embedding = nn.Embedding(vocab_size, embedding_dim)
 
         if use_highway:
-            self.highway = Highway(low_hidden_size * max_character_len, low_hidden_size * max_character_len)
-        self.low_lstm = AttnRNN(input_size=embedding_dim, hidden_size=low_hidden_size, max_seq_len=max_character_len)
-        self.high_lstm = AttnRNN(input_size=low_hidden_size * max_character_len, hidden_size=high_hidden_size, max_seq_len=max_sentence_len)
+            self.highway = Highway(low_hidden_size * max_word_len, low_hidden_size * max_word_len)
+        self.low_lstm = AttnRNN(input_size=embedding_dim, hidden_size=low_hidden_size, max_seq_len=max_word_len)
+        self.high_lstm = AttnRNN(input_size=low_hidden_size * max_word_len, hidden_size=high_hidden_size, max_seq_len=max_sentence_len)
         self.output_layer = nn.Linear(high_hidden_size * max_sentence_len, num_classes)
         self.low_hidden_size = low_hidden_size
 
@@ -41,7 +41,7 @@ class HierAttnRNN(nn.Module):
             if self.use_highway:
                 word_repr = self.highway(word_repr)
             sentence.append(word_repr)
-        sentence = torch.stack(sentence)
+        sentence = torch.stack(sentence, dim=1)
         sentence_repr, hidden = self.high_lstm(sentence)
         output = self.output_layer(sentence_repr.contiguous().view((batch_size, - 1)))
         return output
