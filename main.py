@@ -17,7 +17,7 @@ def main(config: DictConfig) -> None:
 
     if config.test:
         # TODO: clean up current working directory with test=true
-        experiment_path = os.getcwd().replace("test=true,", "")
+        experiment_path = os.getcwd().replace("test=true,", "").replace("test=True,", "")
         trainer = Trainer(config, experiment_path)
         summary, report = trainer.test()
         print(summary)
