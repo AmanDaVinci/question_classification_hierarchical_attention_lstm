@@ -11,7 +11,7 @@ class LSTM(nn.Module):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers=2, batch_first=True)
         self.classifier = nn.Linear(hidden_dim, num_classes)
 
     def forward(self, sentence: torch.Tensor) -> torch.Tensor:
