@@ -2,7 +2,7 @@
 device: 'cuda'
 lr: 1e-3
 lr_lambda: 0.95
-epochs: 10
+epochs: 50
 valid_freq: 100
 save_freq: 1000
 train_report_freq: 50
