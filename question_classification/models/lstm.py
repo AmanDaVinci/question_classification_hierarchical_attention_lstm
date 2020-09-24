@@ -16,6 +16,6 @@ class LSTM(nn.Module):
 
     def forward(self, sentence: torch.Tensor) -> torch.Tensor:
         embeds = self.word_embeddings(sentence)
-        out, (h_n, c_n)  = self.lstm(embeds)
-        y_pred = self.classifier(c_n.view(len(sentence), -1))
+        out, (hidden, cell)  = self.lstm(embeds)
+        y_pred = self.classifier(hidden[-1])
         return y_pred

@@ -1,6 +1,6 @@
 # @package _group_
 _target_: question_classification.models.lstm.LSTM
-vocab_size: 80000
+vocab_size: 7827
 num_classes: 50
 embedding_dim: 20
 hidden_dim: 40
