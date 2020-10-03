@@ -2,9 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+
 class AttnRNN(nn.Module):
     '''AttnRNN implemented with same initializations'''
-    def __init__(self, input_size, hidden_size, max_seq_len=50, K=1, mode="attnlstm"):
+    def __init__(self, input_size, hidden_size, dropout=0.0, max_seq_len=50, K=1, mode="attnlstm"):
         super(AttnRNN, self).__init__()
         """
         :param hidden_size: a scalar for outputs vector size
@@ -20,7 +21,7 @@ class AttnRNN(nn.Module):
         self.rnnCell = nn.RNNCell(input_size, hidden_size)
         self.LSTMCell = nn.LSTMCell(input_size, hidden_size)
         self.AttnLSTMCell = AttnLSTMCell(input_size, hidden_size, max_seq_len, K)
-        
+        self.drop = nn.Dropout(p=dropout)
         #TODO: init lstm weights and biases
         nn.init.orthogonal_(self.rnnCell.weight_ih)
         nn.init.orthogonal_(self.rnnCell.weight_hh)
@@ -84,6 +85,7 @@ class AttnRNN(nn.Module):
             outputs.append(output)
             
         outputs = torch.stack(outputs,dim=1)
+        outputs = self.drop(outputs)
         return outputs, states
 
 class AttnLSTMCell(nn.Module):
