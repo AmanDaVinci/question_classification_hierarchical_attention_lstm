@@ -27,13 +27,14 @@ class Seq2Seq(nn.Module):
         #trg = [trg len, batch size]
         #teacher_forcing_ratio is probability to use teacher forcing
         #e.g. if teacher_forcing_ratio is 0.75 we use ground-truth inputs 75% of the time
+        device = torch.device("cuda") if src.is_cuda else torch.device("cpu")
         if not self.training:
             teacher_forcing_ratio = 0
         batch_size = trg.shape[1]
         trg_len = trg.shape[0]
         trg_vocab_size = self.decoder.output_dim
         #tensor to store decoder outputs
-        outputs = torch.zeros(trg_len, batch_size, trg_vocab_size)
+        outputs = torch.zeros(trg_len, batch_size, trg_vocab_size).to(device)
         #last hidden state of the encoder is used as the initial hidden state of the decoder
         hidden, cell = self.encoder(src)
         #first input to the decoder is the <sos> tokens
