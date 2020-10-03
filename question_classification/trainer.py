@@ -102,9 +102,9 @@ class Trainer():
                              if config.training.tokenize_characters else\
                              WordTokenizer(train_file, vocab_file)
 
-        train_dataset = QCDataset(train_file, self.tokenizer)
-        valid_dataset = QCDataset(valid_file, self.tokenizer)
-        test_dataset = QCDataset(test_file, self.tokenizer)
+        train_dataset = QCDataset(train_file, self.tokenizer, config.data.add_special_tokens) 
+        valid_dataset = QCDataset(valid_file, self.tokenizer, config.data.add_special_tokens)
+        test_dataset = QCDataset(test_file, self.tokenizer, config.data.add_special_tokens)
         collate_fn = QCDataset._char_collate_fn\
                      if config.training.tokenize_characters else\
                      QCDataset._word_collate_fn
