@@ -7,4 +7,5 @@ high_hidden_size: 40
 num_classes: 50
 max_word_len: 28
 max_sentence_len: 37
+K: 8
 use_highway: True
