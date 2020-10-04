@@ -89,7 +89,7 @@ class Trainer():
 
         if not train_file.exists() or not valid_file.exists() or not test_file.exists():
             logging.info(f"Downloading and preparing data...")
-            QCDataset.prepare(data_dir, config.training.tokenize_characters)
+            QCDataset.prepare(data_dir, config.training.tokenize_characters, config.data.augmentation)
 
         if vocab_file.exists():
             logging.info(f"Loading trained tokenizer from {vocab_file}")

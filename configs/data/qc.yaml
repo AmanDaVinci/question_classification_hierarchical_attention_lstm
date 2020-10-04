@@ -1,3 +1,4 @@
 # @package _group_
 name: QC 
 batch_size: 64
+augmentation: False

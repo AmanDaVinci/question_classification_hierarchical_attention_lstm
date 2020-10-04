@@ -6,6 +6,8 @@ from pathlib import Path
 from torch.utils.data import Dataset
 
 from question_classification.tokenizers import Tokenizer, WordTokenizer, CharacterTokenizer
+from eda_nlp.prep_data import prepare_data, remove_tab
+from eda_nlp.code.augment import gen_eda
 
 
 class QCDataset(Dataset):
@@ -70,6 +72,7 @@ class QCDataset(Dataset):
     @classmethod
     def prepare(self, data_dir: Path,
                 tokenize_characters: bool = False,
+                augment_data: bool = False,
                 train_valid_split: int = 4000) -> None:
         """ Download the data and prepare train, valid and test files
 
@@ -90,6 +93,12 @@ class QCDataset(Dataset):
             response = requests.get(self.url+"/"+self.train_file,
                                     allow_redirects=True)
             file.write(response.content)
+
+        if augment_data:
+            prepare_data(data_dir/self.train_file)
+            gen_eda(f'{data_dir/self.train_file}_tabbed', alpha=0.1, num_aug=10,
+                    output_file=f'{data_dir/self.train_file}_aug')
+            remove_tab(data_dir/self.train_file)
 
         # split into train and validation
         with open(data_dir/self.train_file, "r", errors="replace") as reader,\
