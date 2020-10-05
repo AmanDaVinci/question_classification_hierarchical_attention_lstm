@@ -5,7 +5,8 @@ from question_classification.models.highway import Highway
 
 
 class HierRNN(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, low_hidden_size, high_hidden_size, num_classes, max_word_length=28, max_sen_length=37, use_highway=False):
+    def __init__(self, vocab_size, embedding_dim, low_hidden_size, high_hidden_size, num_classes, dropout,
+                 max_word_length=28, max_sen_length=37, use_highway=False):
         # # TODO: Workout the dimensions.
         # TODO: Make it work with att lstm
         super(HierRNN, self).__init__()
@@ -14,8 +15,8 @@ class HierRNN(nn.Module):
 
         if use_highway:
             self.highway = Highway(low_hidden_size * max_word_length, low_hidden_size * max_word_length)
-        self.low_lstm = nn.LSTM(input_size=embedding_dim, hidden_size=low_hidden_size, batch_first=True)
-        self.high_lstm = nn.LSTM(input_size=low_hidden_size * max_word_length, hidden_size=high_hidden_size, batch_first=True)
+        self.low_lstm = nn.LSTM(input_size=embedding_dim, hidden_size=low_hidden_size, batch_first=True, dropout=dropout)
+        self.high_lstm = nn.LSTM(input_size=low_hidden_size * max_word_length, hidden_size=high_hidden_size, batch_first=True, dropout=dropout)
         self.output_layer = nn.Linear(high_hidden_size * max_sen_length, num_classes)
         self.low_hidden_size = low_hidden_size
 

@@ -8,3 +8,4 @@ save_freq: 1000
 train_report_freq: 50
 max_grad_norm: 2
 tokenize_characters: False
+coarse_classification: False

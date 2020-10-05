@@ -8,3 +8,4 @@ num_classes: 50
 max_sen_length: 37
 max_word_length: 28
 use_highway: True
+dropout: 0.0

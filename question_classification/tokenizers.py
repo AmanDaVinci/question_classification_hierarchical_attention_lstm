@@ -20,9 +20,10 @@ class WordTokenizer(Tokenizer):
     """
 
     def __init__(self, text_file: Path = None,
-                 vocab_file: Path = None):
+                 vocab_file: Path = None,
+                 coarse_classification=False):
         if text_file and vocab_file:
-            self.w2i, self.i2w, self.label2idx = self.train(text_file)
+            self.w2i, self.i2w, self.label2idx = self.train(text_file, coarse_classification)
             self.save(vocab_file)
         elif vocab_file:
             self.w2i, self.i2w, self.label2idx = self.load(vocab_file)
@@ -76,7 +77,7 @@ class WordTokenizer(Tokenizer):
             decoded = [t for t in decoded if t not in self.remove_in_decode]
         return ' '.join(decoded)
 
-    def train(self, text_file, max_vocab_size=None):
+    def train(self, text_file, coarse_classification, max_vocab_size=None):
         """
         Train this tokenizer on a list of sentences.
         Method, split sentences, aggragate word counts, make a word to index (w2i)
@@ -100,6 +101,8 @@ class WordTokenizer(Tokenizer):
             for line in text:
                 line = line.split()
                 label_str, question_str = line[0], line[1:]
+                if coarse_classification:
+                    label_str = label_str.split(":")[0]
                 word_counts.update(question_str)
                 labels.append(label_str)
 
@@ -142,9 +145,10 @@ class WordTokenizer(Tokenizer):
 class CharacterTokenizer(Tokenizer):
 
     def __init__(self, text_file: Path = None,
-                 vocab_file: Path = None):
+                 vocab_file: Path = None,
+                 coarse_classification=False):
         if text_file and vocab_file:
-            self.c2i, self.i2c, self.label2idx = self.train(text_file)
+            self.c2i, self.i2c, self.label2idx = self.train(text_file, coarse_classification)
             self.save(vocab_file)
         elif vocab_file:
             self.c2i, self.i2c, self.label2idx = self.load(vocab_file)
@@ -205,7 +209,7 @@ class CharacterTokenizer(Tokenizer):
 
         return dict(c2i), i2c
 
-    def train(self, text_file, max_vocab_size=None):
+    def train(self, text_file, coarse_classification, max_vocab_size=None):
         """
         Train this tokenizer on a list of sentences.
         Method, split sentences, aggragate character counts, make a char to index (c2i)
@@ -231,6 +235,8 @@ class CharacterTokenizer(Tokenizer):
                 label_str, question_str = line[0], line[1:]
                 chars = [char for word in question_str for char in word]
                 char_counts.update(chars)
+                if coarse_classification:
+                    label_str = label_str.split(":")[0]
                 labels.append(label_str)
 
         # Make vocabularies, sorted alphabetically

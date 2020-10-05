@@ -82,7 +82,8 @@ class Trainer():
         self.logger.info(f"Loading data {config.data.name} ...")
         data_dir = DATA_DIR / config.data.name
         token_level = "char" if config.training.tokenize_characters else "word"
-        vocab_file = data_dir / f"vocab_{token_level}_{config.model.vocab_size}.json"
+        classification = "coarse" if config.training.coarse_classification else "fine"
+        vocab_file = data_dir / f"vocab_{token_level}_{config.model.vocab_size}_{classification}.json"
         train_file = data_dir / "train.txt"
         valid_file = data_dir / "valid.txt"
         test_file = data_dir / "test.txt"
@@ -93,18 +94,25 @@ class Trainer():
 
         if vocab_file.exists():
             logging.info(f"Loading trained tokenizer from {vocab_file}")
-            self.tokenizer = CharacterTokenizer(vocab_file=vocab_file)\
+            self.tokenizer = CharacterTokenizer(vocab_file=vocab_file,
+                                                coarse_classification=config.training.coarse_classification)\
                              if config.training.tokenize_characters else\
-                             WordTokenizer(vocab_file=vocab_file)
+                             WordTokenizer(vocab_file=vocab_file,
+                                           coarse_classification=config.training.coarse_classification)
         else:
             logging.info(f"Training tokenizer to {vocab_file}")
-            self.tokenizer = CharacterTokenizer(train_file, vocab_file)\
+            self.tokenizer = CharacterTokenizer(train_file, vocab_file,
+                                                coarse_classification=config.training.coarse_classification)\
                              if config.training.tokenize_characters else\
-                             WordTokenizer(train_file, vocab_file)
+                             WordTokenizer(train_file, vocab_file,
+                                           coarse_classification=config.training.coarse_classification)
 
-        train_dataset = QCDataset(train_file, self.tokenizer, config.data.add_special_tokens) 
-        valid_dataset = QCDataset(valid_file, self.tokenizer, config.data.add_special_tokens)
-        test_dataset = QCDataset(test_file, self.tokenizer, config.data.add_special_tokens)
+        train_dataset = QCDataset(train_file, self.tokenizer, config.data.add_special_tokens
+                                  coarse_classification=self.config.training.coarse_classification)
+        valid_dataset = QCDataset(valid_file, self.tokenizer, config.data.add_special_tokens
+                                  coarse_classification=self.config.training.coarse_classification)
+        test_dataset = QCDataset(test_file, self.tokenizer, config.data.add_special_tokens
+                                  coarse_classification=self.config.training.coarse_classification)
         collate_fn = QCDataset._char_collate_fn\
                      if config.training.tokenize_characters else\
                      QCDataset._word_collate_fn
