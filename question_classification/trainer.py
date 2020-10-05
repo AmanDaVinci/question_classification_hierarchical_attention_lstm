@@ -107,11 +107,11 @@ class Trainer():
                              WordTokenizer(train_file, vocab_file,
                                            coarse_classification=config.training.coarse_classification)
 
-        train_dataset = QCDataset(train_file, self.tokenizer,
+        train_dataset = QCDataset(train_file, self.tokenizer, config.data.add_special_tokens
                                   coarse_classification=self.config.training.coarse_classification)
-        valid_dataset = QCDataset(valid_file, self.tokenizer,
+        valid_dataset = QCDataset(valid_file, self.tokenizer, config.data.add_special_tokens
                                   coarse_classification=self.config.training.coarse_classification)
-        test_dataset = QCDataset(test_file, self.tokenizer,
+        test_dataset = QCDataset(test_file, self.tokenizer, config.data.add_special_tokens
                                   coarse_classification=self.config.training.coarse_classification)
         collate_fn = QCDataset._char_collate_fn\
                      if config.training.tokenize_characters else\

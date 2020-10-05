@@ -17,6 +17,7 @@ class QCDataset(Dataset):
 
     def __init__(self, data_file: Path,
                  tokenizer: Tokenizer,
+                 add_special_tokens: bool = False,
                  hierarchical_classification: bool = False,
                  coarse_classification: bool = False) -> None:
         self.questions, self.labels = [], []
@@ -31,7 +32,7 @@ class QCDataset(Dataset):
                     label_str, question_str = line[0], " ".join(line[1:])
                     if coarse_classification:
                         label_str = label_str.split(":")[0]
-                question = tokenizer.encode(question_str, add_special_tokens=False)
+                question = tokenizer.encode(question_str, add_special_tokens)
                 label = tokenizer.label2idx[label_str]
                 self.questions.append(question)
                 self.labels.append(label)

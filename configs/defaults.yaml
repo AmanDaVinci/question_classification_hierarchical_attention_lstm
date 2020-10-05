@@ -5,6 +5,7 @@ defaults:
 
 seed: 42
 test: false
+unsupervised: false
 version: 0
 
 hydra:
