@@ -3,7 +3,7 @@
 In this work, we investigate the application of attention-based hierarchical LSTM architecture variants to the problem of question classification. Question classification is often the first and important step for any Question-Answering system. We show that although the hierarchical design greatly improves performance over vanilla LSTMs, adding an attention mechanism only results in slight improvement. Then, we change perspective to probabilistically model the question dataset using discrete latent variables in order to see if the given coarse-level categories are re-discovered. While some latent structure is learned, it isn't the one we expected. We consider the possible reasons and suggest future improvements.
 
 The following dataset is used in our experiments: [Experimental Data for Question Classification](http://cogcomp.org/Data/QA/QC/)
-Our report is available at:
+Read our [full report here](report.pdf).
 
 ## How to run?
 The training is based on the [hydra](https://hydra.cc/) config system for reproducibility. The data, model and training hyperparameters are specified as yaml files in the config directory. To train using the defaults on a GPU, just run ```python main.py training=on_gpu```.
@@ -33,6 +33,19 @@ notebooks\
 main.py
 ```
 The ```question_classification``` package consists of the model architectures, dataset classes, tokenizer and trainer. Based on the config, ```main.py``` runs an experiment using the ```question_classification``` package. The results are stored in a sub-directory inside ```experiments\```.
+
+## Experiment Results
+<img src="/results/ablation_study.png" alt="ablation study"	title="Test results of the investigated models for the ablation study" />
+Figure 1: Test results of the investigated models for the ablation study 
+
+<img src="/results/unsupervised_lstm.png" alt="Discrete Latent Variable Modelling using small LSTM"	title="Discrete latent assignments of questions against their coarse-level classes for small LSTM architecture" height="500" />
+Figure 2: Discrete latent assignments of questions against their coarse-level classes for small LSTM architecture
+
+<img src="/results/unsupervised_deep_lstm.png" alt="Discrete Latent Variable Modelling using big LSTM"	title="Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture" height="500" />
+Figure 3: Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture
+
+
+
 
 ## References
 1. Li, X. & Roth, D. Learning question classifiers. in Proceedings of the 19th international conference on Computational linguistics  - vol. 1 1–7 (Association for Computational Linguistics, 2002).
