@@ -7,7 +7,7 @@ from question_classification.models.attnLSTM import AttnRNN
 
 
 class HierAttnRNN(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, low_hidden_size, high_hidden_size, num_classes, dropout,
+    def __init__(self, vocab_size, embedding_dim, low_hidden_size, high_hidden_size, num_classes, dropout, K,
                  max_word_len=27, max_sentence_len=38, use_highway=False):
         # # TODO: Workout the dimensions.
         # TODO: Make it work with att lstm
@@ -17,8 +17,8 @@ class HierAttnRNN(nn.Module):
 
         if use_highway:
             self.highway = Highway(low_hidden_size * max_word_len, low_hidden_size * max_word_len)
-        self.low_lstm = AttnRNN(input_size=embedding_dim, hidden_size=low_hidden_size, max_seq_len=max_word_len, dropout=dropout)
-        self.high_lstm = AttnRNN(input_size=low_hidden_size * max_word_len, hidden_size=high_hidden_size, max_seq_len=max_sentence_len, dropout=dropout)
+        self.low_lstm = AttnRNN(input_size=embedding_dim, hidden_size=low_hidden_size, max_seq_len=max_word_len, dropout=dropout, K=K)
+        self.high_lstm = AttnRNN(input_size=low_hidden_size * max_word_len, hidden_size=high_hidden_size, max_seq_len=max_sentence_len, dropout=dropout, K=K)
         self.output_layer = nn.Linear(high_hidden_size * max_sentence_len, num_classes)
         self.low_hidden_size = low_hidden_size
 

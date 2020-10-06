@@ -28,7 +28,7 @@ class AttnRNN(nn.Module):
 
         nn.init.zeros_(self.rnnCell.bias_ih)
         nn.init.zeros_(self.rnnCell.bias_hh)
-    
+
     @property
     def state_size(self):
         return (self._hidden_size, self._hidden_size)
@@ -83,7 +83,7 @@ class AttnRNN(nn.Module):
             hiddens = hiddens[1:self.K + 1]
             states = (cells, hiddens)
             outputs.append(output)
-            
+
         outputs = torch.stack(outputs,dim=1)
         outputs = self.drop(outputs)
         return outputs, states
@@ -95,54 +95,54 @@ class AttnLSTMCell(nn.Module):
         :param hidden_size: a scalar for outputs vector size
         :param K: a scalar for previous size
         """
-        
+
         self.f_x_lin = nn.Linear(input_size,hidden_size)
         self.o_x_lin = nn.Linear(input_size,hidden_size)
         self.i_x_lin = nn.Linear(input_size,hidden_size)
         self.u_x_lin = nn.Linear(input_size,hidden_size)
-        
+
         self.f_h_lin = nn.Linear(hidden_size,hidden_size)
         self.o_h_lin = nn.Linear(hidden_size,hidden_size)
         self.i_h_lin = nn.Linear(hidden_size,hidden_size)
         self.u_h_lin = nn.Linear(hidden_size,hidden_size)
-        
+
         nn.init.orthogonal_(self.f_x_lin.weight)
         nn.init.orthogonal_(self.o_x_lin.weight)
         nn.init.orthogonal_(self.i_x_lin.weight)
         nn.init.orthogonal_(self.u_x_lin.weight)
-        
+
         nn.init.zeros_(self.f_x_lin.bias)
         nn.init.zeros_(self.o_x_lin.bias)
         nn.init.zeros_(self.i_x_lin.bias)
         nn.init.zeros_(self.u_x_lin.bias)
-        
+
         nn.init.orthogonal_(self.f_h_lin.weight)
         nn.init.orthogonal_(self.o_h_lin.weight)
         nn.init.orthogonal_(self.i_h_lin.weight)
         nn.init.orthogonal_(self.u_h_lin.weight)
-       
+
         nn.init.zeros_(self.f_h_lin.bias)
         nn.init.zeros_(self.o_h_lin.bias)
         nn.init.zeros_(self.i_h_lin.bias)
         nn.init.zeros_(self.u_h_lin.bias)
-        
+
         self.h_k_lins = nn.ModuleList()
         for i in range(max_seq_len):
             current = nn.Linear(hidden_size,hidden_size)
             nn.init.eye_(current.weight)
             nn.init.zeros_(current.bias)
             self.h_k_lins.append(current)
-        
+
         # Attention weights
         self.attnW =   nn.Parameter(torch.normal(mean=torch.zeros((hidden_size, attn_size)),std=0.1))
         self.attnb =   nn.Parameter(torch.normal(mean=torch.zeros((1, attn_size)),std=0.1))
         self.attnW_u = nn.Parameter(torch.normal(mean=torch.zeros((attn_size, 1)),std=0.1))
-        
+
 
     def forward(self, input, states):
-        
+
         (hiddens, cells) = states
-        
+
         f = self.f_x_lin(input) + self.f_h_lin(hiddens[-1])
         o = self.o_x_lin(input) + self.o_h_lin(hiddens[-1])
         i = self.i_x_lin(input) + self.i_h_lin(hiddens[-1])
@@ -152,17 +152,17 @@ class AttnLSTMCell(nn.Module):
         for k, (cell, hid) in enumerate(zip(cells, hiddens)):
             h_k = self.h_k_lins[k](hid*i_gt)
             hs.append(h_k)
-        
+
         # Attention mechanism
         if isinstance(hs, tuple):
             hs = torch.cat(hs, 2)
         elif isinstance(hs, list):
             hs = torch.stack(hs,1)
-        
+
         batch_size = hs.size()[0]
         seq_len = hs.size()[1]
         hid_size = hs.size()[2]
-        
+
         inp_rshp = hs.reshape(batch_size*seq_len, hid_size)
         u = torch.tanh(torch.mm(inp_rshp, self.attnW) + self.attnb)
         uv = torch.mm(u, self.attnW_u)
@@ -171,10 +171,10 @@ class AttnLSTMCell(nn.Module):
 
         # Output of RNN is reduced with attention vector
         u_h = torch.sum(hs * alphas.reshape(-1, seq_len, 1), 1)
-        
+
         u = self.u_x_lin(input) + u_h
         cell_next = cells[-1] * torch.sigmoid(f) + torch.tanh(u) * (1 - torch.sigmoid(f))
         hidden_next = torch.tanh(cell_next) * torch.sigmoid(o)
         outputs = hidden_next, cell_next
-            
+
         return outputs

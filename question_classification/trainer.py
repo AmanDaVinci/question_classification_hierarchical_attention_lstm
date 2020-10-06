@@ -127,7 +127,7 @@ class Trainer():
         self.model = hydra.utils.instantiate(config.model)
         self.logger.info(f"Using device: {config.training.device}")
         self.model.to(config.training.device)
-        self.opt = optim.Adam(self.model.parameters(), lr=config.training.lr)
+        self.opt = optim.Adam(self.model.parameters(), lr=config.training.lr, weight_decay=1e-4)
         self.lr_scheduler = optim.lr_scheduler.LambdaLR(self.opt,
          lr_lambda=lambda epoch: config.training.lr_lambda ** epoch)
         self.loss_fn = nn.CrossEntropyLoss()
@@ -217,6 +217,38 @@ class Trainer():
                   f"F1-Score: {mean_f1_score:.3f} "
                   f"Total Loss: {mean_loss:.3f}")
         self.logger.info(summary)
+
+    def analyse_highway(self):
+        """ Model testing and evaluation """
+        print("Loading best model checkpoint... ")
+        self.load_checkpoint(BEST_MODEL_FNAME)
+        self.model.eval()
+        classes = self.config['model']['num_classes']
+        mean_output = torch.zeros((classes, 37))
+        question_labels = list(self.tokenizer.label2idx.keys())
+        print(question_labels)
+        print("Begin testing...")
+        total = 0
+        with torch.no_grad():
+            for i, batch in enumerate(self.test_dl):
+                x = batch[0].to(self.config.training.device)
+                y = batch[1].to(self.config.training.device)
+                highway_output = self.model.forward_upto_highway(x)
+                for j in range(y.size(0)):
+                    m = highway_output[j].cpu().mean(dim=1)
+                    mean_output[y[j]] += m
+                    total += 1
+        plt.figure(figsize=(40, 20))
+        for k in range(classes):
+            ax = plt.subplot2grid((self.config['model']['num_classes'], 1), (k, 0))
+            ax.imshow((mean_output[k][None, ...]) / total, cmap='coolwarm')
+            ax.set_yticks([0])
+            ax.set_yticklabels([question_labels[k]])
+            ax.set_xticks([])
+        ax.set_xticks(list(range(37)))
+        plt.subplots_adjust(hspace=-0.2)
+        plt.savefig("highway_{}.png".format(str(classes)), bbox_inches='tight', pad_inches=0)
+        return
 
     def test(self):
         """ Model testing and evaluation """
