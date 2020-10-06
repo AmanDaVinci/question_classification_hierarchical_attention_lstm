@@ -43,9 +43,10 @@ Figure 1: Test results of the investigated models for the ablation study
 Figure 2: Discrete latent assignments of questions against their coarse-level classes for small LSTM architecture
 
 <img src="/results/unsupervised_deep_lstm.png" alt="Discrete Latent Variable Modelling using big LSTM"	title="Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture" height="500" />
-Figure 3: Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture
+Figure 3: Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture  
 
-
+<img src="/results/highway_6.png" alt="Average activations per coarse class"	title="Average activations per coarse class" height="200" width="900" />
+Figure 4: Average activations per coarse class
 
 
 ## References
