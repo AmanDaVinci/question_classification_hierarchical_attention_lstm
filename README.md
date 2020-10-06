@@ -30,6 +30,7 @@ data\
 configs\
 experiments\
 notebooks\
+results\
 main.py
 ```
 The ```question_classification``` package consists of the model architectures, dataset classes, tokenizer and trainer. Based on the config, ```main.py``` runs an experiment using the ```question_classification``` package. The results are stored in a sub-directory inside ```experiments\```.
