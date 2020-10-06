@@ -2,7 +2,7 @@
 
 In this work, we investigate the application of attention-based hierarchical LSTM architecture variants to the problem of question classification. Question classification is often the first and important step for any Question-Answering system. We show that although the hierarchical design greatly improves performance over vanilla LSTMs, adding an attention mechanism only results in slight improvement. Then, we change perspective to probabilistically model the question dataset using discrete latent variables in order to see if the given coarse-level categories are re-discovered. While some latent structure is learned, it isn't the one we expected. We consider the possible reasons and suggest future improvements.
 
-The following dataset is used in our experiments: [Experimental Data for Question Classification](http://cogcomp.org/Data/QA/QC/)
+The following dataset is used in our experiments: [Experimental Data for Question Classification](http://cogcomp.org/Data/QA/QC/).  
 Read our [full report here](report.pdf).
 
 ## How to run?
@@ -43,9 +43,10 @@ Figure 1: Test results of the investigated models for the ablation study
 Figure 2: Discrete latent assignments of questions against their coarse-level classes for small LSTM architecture
 
 <img src="/results/unsupervised_deep_lstm.png" alt="Discrete Latent Variable Modelling using big LSTM"	title="Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture" height="500" />
-Figure 3: Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture
+Figure 3: Discrete latent assignments of questions against their coarse-level classes for big LSTM architecture  
 
-
+<img src="/results/highway_6.png" alt="Average activations per coarse class"	title="Average activations per coarse class" height="200" width="900" />
+Figure 4: Average activations per coarse class
 
 
 ## References
